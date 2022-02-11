@@ -29,6 +29,8 @@ input.username<br />
 input.password<br />
 data.headers<br />
 data.cookies<br />
+data.headers[headerName]<br />
+data.cookies[cookieName]<br />
 data.proxy<br />
 
 BROWSERACTION Open<br />
