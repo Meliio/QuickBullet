@@ -3,6 +3,7 @@
     public class CheckerStats
     {
         public int Progress { get => _skip + _checked; }
+        public int DegreeOfParallelism { get; set; }
         public int ToCheck => _toCheck;
         public int Success => _success;
         public int Custom => _custom;

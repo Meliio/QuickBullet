@@ -67,10 +67,10 @@ namespace QuickBullet.Blocks
 
             if (IsCapture)
             {
-                botData.Captures[Output] = result;
+                //botData.Captures[Output] = result;
             }
 
-            botData.Variables[Output] = result;
+            //botData.Variables[Output] = result;
         }
 
         public async Task GetAttributePageAsync(IPage page, BotData botData)
@@ -84,15 +84,15 @@ namespace QuickBullet.Blocks
 
             if (IsCapture)
             {
-                botData.Captures[Output] = result;
+                //botData.Captures[Output] = result;
             }
 
-            botData.Variables[Output] = result;
+            //botData.Variables[Output] = result;
         }
 
         public static Task GetAddressPageAsync(IPage page, BotData botData)
         {
-            botData.Variables["data.address"] = page.Url;
+            //botData.Variables["data.address"] = page.Url;
             return Task.CompletedTask;
         }
 
@@ -109,10 +109,10 @@ namespace QuickBullet.Blocks
         public async Task WaitForResponsePageAsync(IPage page, BotData botData)
         {
             var response = await page.WaitForResponseAsync(Url);
-            botData.Variables["data.address"] = response.Url;
-            botData.Variables["data.statusCode"] = response.Status.ToString();
-            botData.Headers = await response.AllHeadersAsync();
-            botData.Variables["data.source"] = await response.TextAsync();
+            //botData.Variables["data.address"] = response.Url;
+            //botData.Variables["data.statusCode"] = response.Status.ToString();
+            //botData.Headers = await response.AllHeadersAsync();
+            //botData.Variables["data.source"] = await response.TextAsync();
         }
 
         private async Task SetHeadersBrowserAsync(IPage page, BotData botData)

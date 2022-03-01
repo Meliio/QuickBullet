@@ -17,7 +17,7 @@ namespace QuickBullet
         public string WordlistFile { get; set; } = string.Empty;
 
         [Option('p', "proxies", HelpText = "File contains a list of proxy.")]
-        public string Proxies { get; set; } = string.Empty;
+        public string ProxiesFile { get; set; } = string.Empty;
 
         [Option("proxiesType", HelpText = "Type of proxies.")]
         public string ProxiesType { get; set; } = string.Empty;
@@ -73,20 +73,26 @@ namespace QuickBullet
                     ConfigFile = Path.Combine(ConfigsFolder, $"{config}.loli"),
                     WordlistFile = Path.Combine(WordlistsFolder, $"{wordlists}.txt")
                 };
+                
+                runOptions.ProxiesFile = AnsiConsole.Ask("proxies file", "none");
 
-                var proxies = AnsiConsole.Ask("proxies:", "none");
-                runOptions.Proxies = proxies.Equals("none") ? string.Empty : proxies;
+                runOptions.ProxiesType = runOptions.ProxiesFile.Equals("none") ? string.Empty : AnsiConsole.Prompt(new SelectionPrompt<string>()
+                    .Title("proxies type")
+                    .AddChoices(new string[] { "http", "socks4", "socks5" }));
 
-                runOptions.ProxiesType = proxies.Equals("none") ? string.Empty : AnsiConsole.Prompt(new TextPrompt<string>("proxies type:")
-                    .DefaultValue("Http")
-                    .AddChoice("Http")
-                    .AddChoice("Socks4")
-                    .AddChoice("Socks5"));
+                runOptions.Skip = AnsiConsole.Ask("skip", -1);
 
-                var skip = AnsiConsole.Ask("skip: ", "none");
-                runOptions.Skip = skip == "none" ? -1 : int.Parse(skip);
+                var bots = AnsiConsole.Ask("bots", 1);
 
-                runOptions.Bots = AnsiConsole.Ask("bots:", 1);
+                while (bots > 200)
+                {
+                    AnsiConsole.MarkupLine("[red]The number of bots must be less than 200[/]");
+
+                    bots = AnsiConsole.Ask("bots", 1);
+                }
+
+                runOptions.Bots = bots;
+
                 runOptions.Verbose = AnsiConsole.Ask("verbose:", false);
 
                 await RunAsync(runOptions);
@@ -136,11 +142,13 @@ namespace QuickBullet
 
             if (configFiles.Any())
             {
-                return configFiles.ToArray();
+                return configFiles;
             }
 
             AnsiConsole.MarkupLine("[red]The Configs folder does not contain any configs[/]");
+            
             Console.ReadKey();
+            
             Environment.Exit(0);
 
             return null;
@@ -152,11 +160,13 @@ namespace QuickBullet
 
             if (wordlistsFiles.Any())
             {
-                return wordlistsFiles.ToArray();
+                return wordlistsFiles;
             }
 
             AnsiConsole.MarkupLine("[red]The Wordlists folder does not contain any wordlists[/]");
+            
             Console.ReadKey();
+            
             Environment.Exit(0);
 
             return null;
@@ -164,11 +174,19 @@ namespace QuickBullet
 
         private static async Task RunAsync(RunOptions runOptions)
         {
-            var proxies = string.IsNullOrEmpty(runOptions.Proxies) ? Array.Empty<string>() : File.ReadAllLines(runOptions.Proxies).Where(p => !string.IsNullOrEmpty(p));
+            var proxies = runOptions.ProxiesFile.Equals("none") ? Array.Empty<string>() : File.ReadAllLines(runOptions.ProxiesFile).Where(p => !string.IsNullOrEmpty(p));
 
             var proxyType = Enum.TryParse<ProxyType>(runOptions.ProxiesType, true, out var result) ? result : ProxyType.Http;
 
-            var checker = new CheckerBuilder(runOptions.ConfigFile, runOptions.WordlistFile, proxies, proxyType, runOptions.Skip, runOptions.Bots, runOptions.Verbose).Build();
+            var checkerBuilder = new CheckerBuilder(runOptions.ConfigFile, runOptions.WordlistFile, proxies, proxyType, runOptions.Skip, runOptions.Bots, runOptions.Verbose);
+
+            var checker = await checkerBuilder.BuildAsync();
+
+            var consoleManager = new ConsoleManager(checker);
+
+            _ = consoleManager.StartUpdatingTitleAsync();
+
+            _ = consoleManager.StartListeningKeysAsync();
 
             await checker.StartAsync();
         }

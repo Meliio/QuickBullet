@@ -27,14 +27,16 @@ namespace QuickBullet.Blocks
 
             foreach (var header in _request.Headers)
             {
-                requestMessage.Headers.TryAddWithoutValidation(header.Key, ReplaceValues(header.Value, botData));  
+                requestMessage.Headers.TryAddWithoutValidation(header.Key, ReplaceValues(header.Value, botData));
             }
 
             botData.CookieContainer.SetCookies(requestUri, ReplaceValues(_request.CookieHeader, botData));
 
-            if (!string.IsNullOrEmpty(botData.CookieContainer.GetCookieHeader(requestUri)))
+            var cookieHeader = botData.CookieContainer.GetCookieHeader(requestUri);
+
+            if (!string.IsNullOrEmpty(cookieHeader))
             {
-                requestMessage.Headers.Add("cookie", botData.CookieContainer.GetCookieHeader(requestUri));
+                requestMessage.Headers.Add("cookie", cookieHeader);
             }
 
             if (_request.StringContents.Any())

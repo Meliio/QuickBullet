@@ -13,11 +13,6 @@ namespace QuickBullet.Blocks
             _regex = new Regex("<([^ ].+?)(?:\\[([^ ].+?)\\])?>", RegexOptions.Compiled);
             _replaceFunctions = new Dictionary<string, Func<string, Match, BotData, string>>(StringComparer.OrdinalIgnoreCase)
             {
-                { "input", ReplaceWithInput },
-                { "input.user", ReplaceWithInputUsername },
-                { "input.pass", ReplaceWithInputPassword },
-                { "input.username", ReplaceWithInputUsername },
-                { "input.password", ReplaceWithInputPassword },
                 { "data.headers", ReplaceWithResponseHeaders },
                 { "data.cookies", ReplaceWithResponseCookies }
             };
@@ -34,12 +29,6 @@ namespace QuickBullet.Blocks
 
             return input;
         }
-
-        private string ReplaceWithInput(string input, Match match, BotData botData) => input.Replace(match.Value, botData.Input.ToString());
-
-        private string ReplaceWithInputUsername(string input, Match match, BotData botData) => input.Replace(match.Value, botData.Input.Combo.Username);
-
-        private string ReplaceWithInputPassword(string input, Match match, BotData botData) => input.Replace(match.Value, botData.Input.Combo.Password);
 
         private string ReplaceWithResponseHeaders(string input, Match match, BotData botData)
         {

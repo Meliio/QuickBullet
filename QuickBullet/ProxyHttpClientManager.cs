@@ -7,17 +7,9 @@ namespace QuickBullet
         private readonly List<ProxyHttpClient> _proxyHttpClients;
         private readonly Random _random;
 
-        public ProxyHttpClientManager(IEnumerable<Proxy> proxies)
+        public ProxyHttpClientManager(List<ProxyHttpClient> proxyHttpClients)
         {
-            _proxyHttpClients = new List<ProxyHttpClient>();
-            if (proxies.Any())
-            {
-                _proxyHttpClients.AddRange(proxies.Select(p => new ProxyHttpClient(new HttpClientHandler() { UseCookies = false, Proxy = p }, p)));
-            }
-            else
-            {
-                _proxyHttpClients.Add(new ProxyHttpClient(new HttpClientHandler() { UseCookies = false }, null));
-            }
+            _proxyHttpClients = proxyHttpClients;
             _random = new Random();
         }
 

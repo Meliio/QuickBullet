@@ -29,7 +29,12 @@ namespace QuickBullet.Models
             CookieContainer = new CookieContainer();
             Variables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
-                { "botStatus", "none" }
+                { "botStatus", "none" },
+                { "input", input.ToString() },
+                { "input.user", input.Combo.Username },
+                { "input.pass", input.Combo.Password },
+                { "input.username", input.Combo.Username },
+                { "input.password", input.Combo.Password }
             };
             Captures = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             _objects = new Dictionary<string, object>();

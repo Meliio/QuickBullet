@@ -82,13 +82,13 @@ namespace QuickBullet.Blocks
                 } 
             });
 
+            var regexUrl = new Regex(string.IsNullOrEmpty(botData.QuickBulletSettings.Browser.UrlToAbort) ? "^$" : botData.QuickBulletSettings.Browser.UrlToAbort);
+
+            var regexResourceType = new Regex(string.IsNullOrEmpty(botData.QuickBulletSettings.Browser.ResourceTypeToAbort) ? "^$" : botData.QuickBulletSettings.Browser.ResourceTypeToAbort);
+
             await page.RouteAsync("**/*", route =>
             {
-                if (!string.IsNullOrEmpty(botData.QuickBulletSettings.Browser.UrlToAbort) && Regex.IsMatch(route.Request.Url, botData.QuickBulletSettings.Browser.UrlToAbort))
-                {
-                    route.AbortAsync();
-                }
-                else if (!string.IsNullOrEmpty(botData.QuickBulletSettings.Browser.ResourceTypeToAbort) && Regex.IsMatch(route.Request.Url, botData.QuickBulletSettings.Browser.ResourceTypeToAbort))
+                if (regexUrl.IsMatch(route.Request.Url) || regexResourceType.IsMatch(route.Request.ResourceType))
                 {
                     route.AbortAsync();
                 }
@@ -99,6 +99,7 @@ namespace QuickBullet.Blocks
             });
 
             botData.SetObject("playwrightBrowser", browser);
+
             botData.SetObject("playwrightPage", page);
         }
 

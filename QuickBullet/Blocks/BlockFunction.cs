@@ -99,10 +99,10 @@ namespace QuickBullet.Blocks
 
                 if (IsCapture)
                 {
-                    botData.Captures[Output] = result;
+                    //botData.Captures[Output] = result;
                 }
 
-                botData.Variables[Output] = result;
+                //botData.Variables[Output] = result;
 
                 return;
             }

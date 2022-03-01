@@ -1,7 +1,10 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Playwright;
+using Newtonsoft.Json;
 using QuickBullet.Models;
+using RuriLib.Parallelization;
 using Spectre.Console;
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 using Yove.Proxy;
 
@@ -39,7 +42,7 @@ namespace QuickBullet
             };
         }
 
-        public Checker Build()
+        public async Task<Checker> BuildAsync()
         {
             var quickBulletSettings = JsonConvert.DeserializeObject<QuickBulletSettings>(File.ReadAllText(settingsFile));
 
@@ -76,20 +79,163 @@ namespace QuickBullet
 
             var useProxy = _proxies.Any();
 
-            var proxyHttpClientManager = new ProxyHttpClientManager(_proxies.Select(p => BuildProxy(p, _proxyType)));
+            var proxyHttpClients = _proxies.Any() ? new List<ProxyHttpClient>(_proxies.Select(p => BuildProxy(p, _proxyType)).Select(p => new ProxyHttpClient(new HttpClientHandler() { UseCookies = false, Proxy = p }, p) { Timeout = TimeSpan.FromSeconds(15) })) : new List<ProxyHttpClient>() { new ProxyHttpClient(new HttpClientHandler() { UseCookies = false }, null) { Timeout = TimeSpan.FromSeconds(15) } };
+
+            var proxyHttpClientManager = new ProxyHttpClientManager(proxyHttpClients);
+
+            if (useProxy)
+            {
+                _ = proxyHttpClientManager.StartValidateAllProxiesAsync();
+            }
 
             var record = GetRecord(configSettings.Name);
 
             Directory.CreateDirectory(Path.Combine(quickBulletSettings.OutputDirectory, configSettings.Name));
 
-            return new Checker(configSettings, blocks, botInputs, proxyHttpClientManager, useProxy, _skip == -1 ? record.Progress : _skip, _bots, _verbose, quickBulletSettings, record);
+            var skip = _skip == -1 ? record.Progress : _skip;
+
+            var checkerStats = new CheckerStats(skip)
+            { 
+                DegreeOfParallelism = _bots
+            };
+
+            var statusesToBreak = new string[] { "toCheck", "failure", "retry", "ban", "error" };
+            var statusesToRecheck = new string[] { "retry", "ban", "error" };
+
+            var readerWriterLock = new ReaderWriterLock();
+
+            var handler = new HttpClientHandler()
+            {
+                UseCookies = false
+            };
+
+            var httpClient = new HttpClient(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(15)
+            };
+
+            var playwright = await Playwright.CreateAsync();
+
+            Func<BotInput, CancellationToken, Task<bool>> check = new(async (input, cancellationToken) =>
+            {
+                BotData botData = null;
+
+                for (var attempts = 0; attempts < 8; attempts++)
+                {
+                    var proxyHttpClient = proxyHttpClientManager.GetRandomProxyHttpClient();
+
+                    botData = new BotData(quickBulletSettings, input, httpClient, proxyHttpClient, playwright)
+                    {
+                        UseProxy = useProxy
+                    };
+
+                    botData.Variables.Add("data.proxy", proxyHttpClient.Proxy is null ? string.Empty : proxyHttpClient.Proxy.ToString());
+
+                    foreach (var customInput in configSettings.CustomInputs)
+                    {
+                        botData.Variables.Add(customInput.Name, customInput.Value);
+                    }
+
+                    foreach (var block in blocks)
+                    {
+                        try
+                        {
+                            await block.RunAsync(botData);
+                        }
+                        catch (HttpRequestException)
+                        {
+                            proxyHttpClient.IsValid = false;
+                            botData.Variables["botStatus"] = "retry";
+                        }
+                        catch (Exception error)
+                        {
+                            if (error.Message.Contains("HttpClient.Timeout") || error.Message.Contains("ERR_TIMED_OUT"))
+                            {
+                                proxyHttpClient.IsValid = false;
+                            }
+                            else if (_verbose)
+                            {
+                                AnsiConsole.WriteException(error);
+                            }
+                            botData.Variables["botStatus"] = "retry";
+                        }
+
+                        if (statusesToBreak.Contains(botData.Variables["botStatus"], StringComparer.OrdinalIgnoreCase))
+                        {
+                            break;
+                        }
+                    }
+
+                    await botData.DisposeAsync();
+
+                    if (statusesToRecheck.Contains(botData.Variables["botStatus"], StringComparer.OrdinalIgnoreCase))
+                    {
+                        if (botData.Variables["botStatus"].Equals("ban", StringComparison.OrdinalIgnoreCase))
+                        {
+                            proxyHttpClient.IsValid = false;
+                        }
+                        checkerStats.Increment(botData.Variables["botStatus"]);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                var botStatus = statusesToRecheck.Contains(botData.Variables["botStatus"], StringComparer.OrdinalIgnoreCase) ? "tocheck" : botData.Variables["botStatus"].ToLower();
+
+                if (botStatus.Equals("failure"))
+                {
+                    checkerStats.Increment(botData.Variables["botStatus"]);
+                }
+                else
+                {
+                    var outputPath = Path.Combine(quickBulletSettings.OutputDirectory, configSettings.Name, $"{botStatus}.txt");
+                    var output = botData.Captures.Any() ? new StringBuilder().Append(botData.Input.ToString()).Append(quickBulletSettings.OutputSeparator).AppendJoin(quickBulletSettings.OutputSeparator, botData.Captures.Select(c => $"{c.Key} = {c.Value}")).ToString() : botData.Input.ToString();
+
+                    try
+                    {
+                        readerWriterLock.AcquireWriterLock(int.MaxValue);
+                        using var streamWriter = File.AppendText(outputPath);
+                        await streamWriter.WriteLineAsync(output);
+                    }
+                    finally
+                    {
+                        readerWriterLock.ReleaseWriterLock();
+                    }
+
+                    switch (botStatus)
+                    {
+
+                        case "success":
+                            AnsiConsole.MarkupLine($"[green4]SUCCESS:[/] {output}");
+                            break;
+                        case "tocheck":
+                            AnsiConsole.MarkupLine($"[cyan3]TOCHECK:[/] {output}");
+                            break;
+                        default:
+                            AnsiConsole.MarkupLine($"[orange3]{botStatus.ToUpper()}:[/] {output}");
+                            break;
+                    }
+
+                    checkerStats.Increment(botStatus);
+                }
+
+                checkerStats.Increment("checked");
+
+                return true;
+            });
+
+            var paradllelizer = ParallelizerFactory<BotInput, bool>.Create(type: ParallelizerType.TaskBased, workItems: botInputs, workFunction: check, degreeOfParallelism: _bots, totalAmount: botInputs.Skip(skip).Count(), skip: skip);
+
+            return new Checker(paradllelizer, checkerStats, record);
         }
 
-        private static Proxy BuildProxy(string proxy, ProxyType proxyType)
+        private static Models.Proxy BuildProxy(string proxy, ProxyType proxyType)
         {
             var proxySplit = proxy.Split(':');
 
-            var proxyClient = new Proxy(proxySplit[0], int.Parse(proxySplit[1]), proxyType);
+            var proxyClient = new Models.Proxy(proxySplit[0], int.Parse(proxySplit[1]), proxyType);
 
             if (proxySplit.Length == 4)
             {

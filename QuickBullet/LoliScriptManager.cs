@@ -32,7 +32,7 @@ namespace QuickBullet
 
             var script = new List<string>();
 
-            var isScript = false;
+            var isScript = !lines.Any(l => l.Trim().Equals("[SCRIPT]"));
 
             foreach (var line in lines.First().Equals("[SETTINGS]", StringComparison.OrdinalIgnoreCase) ? lines.Skip(1) : lines)
             {
@@ -161,7 +161,17 @@ namespace QuickBullet
                         blockExtractor.Group = GetToken(ref script, true);
                         break;
                     default:
-                        if (token.Equals("->"))
+                        var tokenSplit = token.Split('=');
+                        if (tokenSplit.Length == 2)
+                        {
+                            switch (tokenSplit[0].ToUpper())
+                            {
+                                case "JTOKENPARSING":
+                                    blockExtractor.UseJToken = bool.Parse(tokenSplit[1]);
+                                    break;
+                            }
+                        }
+                        else if (token.Equals("->"))
                         {
                             switch (GetToken(ref script).ToUpper())
                             {

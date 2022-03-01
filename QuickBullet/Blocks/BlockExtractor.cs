@@ -20,6 +20,7 @@ namespace QuickBullet.Blocks
         public string Regex { get; set; } = string.Empty;
         public string Group { get; set; } = string.Empty;
         public string Source { get; set; } = string.Empty;
+        public bool UseJToken { get; set; } = false;
         public bool IsCapture { get; set; } = false;
 
         private readonly Dictionary<string, Func<string, string>> _extractorFunctions;
@@ -92,14 +93,44 @@ namespace QuickBullet.Blocks
 
         private string JsonExtractor(string source)
         {
-            var token = JObject.Parse(source).SelectToken(Json);
-
-            if (token is null)
+            if (UseJToken)
             {
-                return string.Empty;
+                var token = JObject.Parse(source).SelectToken(Json);
+
+                if (token is null)
+                {
+                    return string.Empty;
+                }
+
+                return token.ToString();
             }
 
-            return token.ToString();
+            var jsonlist = new List<KeyValuePair<string, string>>();
+
+            ParseJson(string.Empty, source, jsonlist);
+
+            return jsonlist.SingleOrDefault(j => j.Key.Equals(Json, StringComparison.OrdinalIgnoreCase)).Value;
+        }
+
+        private static void ParseJson(string A, string B, List<KeyValuePair<string, string>> jsonlist)
+        {
+            jsonlist.Add(new KeyValuePair<string, string>(A, B));
+
+            if (B.StartsWith('['))
+            {
+                foreach (var element in JArray.Parse(B).Children())
+                {
+                    ParseJson(string.Empty, element.ToString(), jsonlist);
+                }
+            }
+
+            if (B.Contains('{'))
+            {
+                foreach (var element in JObject.Parse(B))
+                {
+                    ParseJson(element.Key, element.Value.ToString(), jsonlist);
+                }
+            }
         }
 
         private string CssExtractor(string source)
@@ -121,11 +152,11 @@ namespace QuickBullet.Blocks
         private string XPathExtractor(string source)
         {
             var htmlDocument = new HtmlDocument();
-            
+
             htmlDocument.LoadHtml(source);
-            
+
             var htmlNode = htmlDocument.DocumentNode.SelectSingleNode(Selector);
-            
+
             return _getXPathAttributeFunctions.ContainsKey(Attribute) ? _getXPathAttributeFunctions[Attribute].Invoke(htmlNode) : htmlNode.GetAttributeValue(Attribute, string.Empty);
         }
 
