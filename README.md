@@ -1,5 +1,6 @@
 # QuickBullet
 
+```
 [SETTINGS]
 {
    "name":"example.com",
@@ -17,52 +18,57 @@
       }
    ]
 }
+[SCRIPT]
 
-input
-input.user
-input.pass
-input.username
-input.password
-data.headers
-data.cookies
-data.proxy
+REQUEST GET "http://example.com"
+```
+input<br />
+input.user<br />
+input.pass<br />
+input.username<br />
+input.password<br />
+data.headers<br />
+data.cookies<br />
+data.headers[headerName]<br />
+data.cookies[cookieName]<br />
+data.proxy<br />
 
-BROWSERACTION Open
-BROWSERACTION Close
-BROWSERACTION GetCookies
-BROWSERACTION SetCookies
-BROWSERACTION Clearcookies
+BROWSERACTION Open<br />
+BROWSERACTION Close<br />
+BROWSERACTION GetCookies<br />
+BROWSERACTION SetCookies<br />
+BROWSERACTION Clearcookies<br />
 
-PAGEACTION Click ""
-PAGEACTION Delay ""
-PAGEACTION Evaluate ""
-PAGEACTION Goto ""
-PAGEACTION PressKey ""
-PAGEACTION GetContent
-PAGEACTION Reload
-PAGEACTION SendKey "" "" DELAY ""
-PAGEACTION SetHeaders
-  HEADER "name: value"
-PAGEACTION WaitForResponse ""
-PAGEACTION WaitForSelector ""
-PAGEACTION WaitForTimeout ""
+PAGEACTION Click ""<br />
+PAGEACTION Delay ""<br />
+PAGEACTION Evaluate ""<br />
+PAGEACTION Goto ""<br />
+PAGEACTION PressKey ""<br />
+PAGEACTION GetContent<br />
+PAGEACTION Reload<br />
+PAGEACTION SendKey "" "" DELAY ""<br />
+PAGEACTION SetHeaders<br />
+  HEADER "name: value"<br />
+PAGEACTION WaitForResponse ""<br />
+PAGEACTION WaitForSelector ""<br />
+PAGEACTION WaitForTimeout ""<br />
 
-FUNCTION Base64Decode "" -> VAR ""
-FUNCTION Base64Encode "" -> VAR ""
-FUNCTION ClearCookies
-FUNCTION Constant "" -> VAR ""
-FUNCTION CurrentUnixTime -> VAR ""
-FUNCTION Hash SHA512 "" -> VAR ""
-FUNCTION GetRandomUA -> VAR ""
-FUNCTION HtmlDecode ""-> VAR ""
-FUNCTION HtmlEncode ""-> VAR ""
-FUNCTION UrlDecode ""-> VAR ""
-FUNCTION UrlEncode ""-> VAR ""
-FUNCTION Length ""-> VAR ""
-FUNCTION Replace ""-> VAR ""
-FUNCTION ToLowercase ""-> VAR ""
-FUNCTION ToUppercase "" -> VAR ""
+FUNCTION Base64Decode "" -> VAR ""<br />
+FUNCTION Base64Encode "" -> VAR ""<br />
+FUNCTION ClearCookies<br />
+FUNCTION Constant "" -> VAR ""<br />
+FUNCTION CurrentUnixTime -> VAR ""<br />
+FUNCTION Hash SHA512 "" -> VAR ""<br />
+FUNCTION GetRandomUA -> VAR ""<br />
+FUNCTION HtmlDecode ""-> VAR ""<br />
+FUNCTION HtmlEncode ""-> VAR ""<br />
+FUNCTION UrlDecode ""-> VAR ""<br />
+FUNCTION UrlEncode ""-> VAR ""<br />
+FUNCTION Length ""-> VAR ""<br />
+FUNCTION Replace ""-> VAR ""<br />
+FUNCTION ToLowercase ""-> VAR ""<br />
+FUNCTION ToUppercase "" -> VAR ""<br />
 
-SET VAR "varName" "value"
-SET CAP "capName" "value"
-SET USEPROXY FALSE
+SET VAR "varName" "value"<br />
+SET CAP "capName" "value"<br />
+SET USEPROXY FALSE<br />
