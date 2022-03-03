@@ -3,7 +3,8 @@
 ```
 [SETTINGS]
 {
-   "name":"example.com",
+   "name":"Example",
+   "author":"Meliio",
    "AdditionalInfo":"",
    "customInputs":[
       {
@@ -23,15 +24,15 @@
 REQUEST GET "http://example.com"
 ```
 input<br />
-input.user<br />
-input.pass<br />
-input.username<br />
-input.password<br />
-data.headers<br />
-data.cookies<br />
-data.headers[headerName]<br />
-data.cookies[cookieName]<br />
-data.proxy<br />
+user<br />
+pass<br />
+username<br />
+password<br />
+headers<br />
+cookies<br />
+headers[headerName]<br />
+cookies[cookieName]<br />
+proxy<br />
 
 BROWSERACTION Open<br />
 BROWSERACTION Close<br />
