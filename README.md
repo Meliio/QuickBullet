@@ -14,7 +14,7 @@
    ],
    "inputRules":[
       {
-         "name":"input.PASS",
+         "name":"PASS",
          "regex":""
       }
    ]
